@@ -72,32 +72,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
             </div>
           </div>
 
-          {/* Right Date & Campus Facade Image */}
+          {/* Right Date & Academic Session Info Widget */}
           <div className="flex flex-col items-stretch sm:items-end gap-2.5 flex-shrink-0 w-full lg:w-auto">
-            <div className="px-3.5 py-1.5 rounded-xl bg-[#1e3a8a] text-white shadow-sm border border-blue-900/60 text-left sm:text-right flex items-center justify-between sm:block">
-              <div className="flex items-center justify-start sm:justify-end gap-1.5 text-xs font-bold">
-                <Calendar size={13} className="text-blue-200" />
-                <span>Mon, Nov 16, 2025</span>
-              </div>
-              <div className="text-[10px] text-blue-200 font-medium">
-                {currentSession.name} • {currentTerm.name}
-              </div>
-            </div>
-
-            {/* Campus Photo Card */}
-            <div className="w-full sm:w-80 md:w-88 h-28 sm:h-32 md:h-36 rounded-2xl overflow-hidden relative shadow-md border border-white group bg-slate-900">
-              <img
-                src="/citadel_school.png"
-                alt={`${school.name}, Port Harcourt`}
-                className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent flex flex-col justify-end p-2.5 text-right pointer-events-none">
-                <span className="text-[11px] font-black text-white italic tracking-wide drop-shadow-md">
-                  "...Nurturing
+            <div className="p-4 rounded-2xl bg-[#1e3a8a] text-white shadow-sm border border-blue-900/60 min-w-[240px] space-y-2">
+              <div className="flex items-center justify-between gap-3 border-b border-blue-800/60 pb-2">
+                <div className="flex items-center gap-1.5 text-xs font-bold">
+                  <Calendar size={13} className="text-blue-200" />
+                  <span>Mon, Nov 16, 2025</span>
+                </div>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold border border-emerald-400/30">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>Active</span>
                 </span>
-                <span className="text-[10px] font-extrabold text-cyan-200 italic tracking-wide drop-shadow-md">
-                  To Stardom"
-                </span>
+              </div>
+              <div className="space-y-0.5 text-left sm:text-right">
+                <div className="text-xs font-extrabold text-white">
+                  {currentSession.name}
+                </div>
+                <div className="text-[11px] text-blue-200 font-medium">
+                  {currentTerm.name}
+                </div>
+              </div>
+              <div className="pt-1.5 flex items-center justify-between text-[11px] text-blue-200/90 font-semibold border-t border-blue-800/40">
+                <span>Code: <span className="text-white font-mono">{school.code}</span></span>
+                <span className="text-[10px] px-2 py-0.5 rounded bg-blue-700/60 text-blue-100 font-bold">In Session</span>
               </div>
             </div>
           </div>

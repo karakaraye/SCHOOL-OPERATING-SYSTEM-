@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Database, RefreshCw, CheckCircle2, Server, Globe, Shield } from 'lucide-react';
+import { Database, RefreshCw, CheckCircle2, Server, Globe, Shield, RotateCcw, HardDrive } from 'lucide-react';
 import { useSchool } from '../../context/SchoolContext';
 
 export const LiveDbBadge: React.FC = () => {
-  const { isLiveDb, dbStatus, dbInfo, lastSyncTime, refreshFromLiveDb } = useSchool();
+  const { isLiveDb, dbStatus, dbInfo, lastSyncTime, refreshFromLiveDb, resetToDemoData } = useSchool();
   const [isOpen, setIsOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -13,6 +13,12 @@ export const LiveDbBadge: React.FC = () => {
       await refreshFromLiveDb();
     } finally {
       setTimeout(() => setIsRefreshing(false), 500);
+    }
+  };
+
+  const handleResetData = () => {
+    if (window.confirm('Reset all demo data back to default initial seed? Any custom entries you created will be refreshed.')) {
+      resetToDemoData();
     }
   };
 
@@ -30,9 +36,9 @@ export const LiveDbBadge: React.FC = () => {
             ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
             : dbStatus === 'CONNECTING'
             ? 'bg-amber-50 text-amber-700 border-amber-300'
-            : 'bg-slate-100 text-slate-600 border-slate-300'
+            : 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800'
         }`}
-        title="Live Supabase PostgreSQL Database Connection"
+        title={isLiveDb ? 'Live Supabase PostgreSQL Database' : 'Local Storage Demo Mode'}
       >
         <span className="relative flex h-2 w-2">
           {isLiveDb && (
@@ -40,13 +46,13 @@ export const LiveDbBadge: React.FC = () => {
           )}
           <span
             className={`relative inline-flex rounded-full h-2 w-2 ${
-              isLiveDb ? 'bg-emerald-500' : dbStatus === 'CONNECTING' ? 'bg-amber-500' : 'bg-slate-400'
+              isLiveDb ? 'bg-emerald-500' : dbStatus === 'CONNECTING' ? 'bg-amber-500' : 'bg-blue-500'
             }`}
           />
         </span>
-        <Database size={13} className={isLiveDb ? 'text-emerald-600' : 'text-slate-500'} />
+        <Database size={13} className={isLiveDb ? 'text-emerald-600' : 'text-blue-600 dark:text-blue-400'} />
         <span className="hidden sm:inline font-mono text-[11px]">
-          {isLiveDb ? 'Supabase Live' : dbStatus === 'CONNECTING' ? 'Connecting DB...' : 'Local Cache'}
+          {isLiveDb ? 'Supabase Live' : dbStatus === 'CONNECTING' ? 'Connecting DB...' : 'Local Storage'}
         </span>
       </button>
 
@@ -54,75 +60,144 @@ export const LiveDbBadge: React.FC = () => {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 mt-2 w-72 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-3.5 z-50 animate-scale-up space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400">
-                  <Database size={15} />
+          <div className="absolute right-0 mt-2 w-80 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-4 z-50 animate-scale-up space-y-3.5">
+            {isLiveDb ? (
+              <>
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400">
+                      <Database size={15} />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-black text-slate-900 dark:text-white font-heading">
+                        Supabase PostgreSQL
+                      </h4>
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                        <CheckCircle2 size={10} />
+                        <span>Real-time Connection Active</span>
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-xs font-black text-slate-900 dark:text-white font-heading">
-                    Supabase PostgreSQL
-                  </h4>
-                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
-                    <CheckCircle2 size={10} />
-                    <span>Real-time Connection Active</span>
-                  </span>
+
+                <div className="space-y-1.5 text-[11px] text-slate-600 dark:text-slate-300">
+                  <div className="flex items-center justify-between p-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700">
+                    <span className="text-slate-400 flex items-center gap-1">
+                      <Globe size={11} /> Host:
+                    </span>
+                    <span className="font-mono font-bold text-slate-800 dark:text-slate-200 truncate max-w-[140px]">
+                      {dbInfo?.host || 'aws-1-eu-west-1.pooler.supabase.com'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between p-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700">
+                    <span className="text-slate-400 flex items-center gap-1">
+                      <Server size={11} /> Port & DB:
+                    </span>
+                    <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
+                      6543 • postgres
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between p-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700">
+                    <span className="text-slate-400 flex items-center gap-1">
+                      <Shield size={11} /> SSL:
+                    </span>
+                    <span className="badge badge-success text-[9px] py-0.5">
+                      TLS / Encrypted
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1 text-[10px] text-slate-400">
+                    <span>Last live sync:</span>
+                    <span className="font-mono font-semibold text-slate-700 dark:text-slate-300">
+                      {formattedTime}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            <div className="space-y-1.5 text-[11px] text-slate-600 dark:text-slate-300">
-              <div className="flex items-center justify-between p-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700">
-                <span className="text-slate-400 flex items-center gap-1">
-                  <Globe size={11} /> Host:
-                </span>
-                <span className="font-mono font-bold text-slate-800 dark:text-slate-200 truncate max-w-[140px]">
-                  {dbInfo?.host || 'aws-1-eu-west-1.pooler.supabase.com'}
-                </span>
-              </div>
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                  <span className="text-[10px] text-slate-400">All data synced live</span>
+                  <button
+                    type="button"
+                    onClick={handleRefresh}
+                    disabled={isRefreshing}
+                    className="btn btn-secondary btn-sm !py-1 !px-2.5 !text-xs flex items-center gap-1 font-bold bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800"
+                  >
+                    <RefreshCw size={12} className={isRefreshing ? 'animate-spin' : ''} />
+                    <span>Sync Now</span>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400">
+                      <HardDrive size={15} />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-black text-slate-900 dark:text-white font-heading">
+                        Local Storage Mode
+                      </h4>
+                      <span className="text-[10px] text-blue-600 dark:text-blue-400 font-bold flex items-center gap-1">
+                        <CheckCircle2 size={10} />
+                        <span>Interactive Demo Sandbox</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
 
-              <div className="flex items-center justify-between p-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700">
-                <span className="text-slate-400 flex items-center gap-1">
-                  <Server size={11} /> Port & DB:
-                </span>
-                <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
-                  6543 • postgres
-                </span>
-              </div>
+                <div className="space-y-1.5 text-[11px] text-slate-600 dark:text-slate-300">
+                  <div className="flex items-center justify-between p-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700">
+                    <span className="text-slate-400 flex items-center gap-1">
+                      <Globe size={11} /> Storage Engine:
+                    </span>
+                    <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
+                      Browser LocalStorage
+                    </span>
+                  </div>
 
-              <div className="flex items-center justify-between p-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700">
-                <span className="text-slate-400 flex items-center gap-1">
-                  <Shield size={11} /> SSL:
-                </span>
-                <span className="badge badge-success text-[9px] py-0.5">
-                  TLS / Encrypted
-                </span>
-              </div>
+                  <div className="flex items-center justify-between p-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700">
+                    <span className="text-slate-400 flex items-center gap-1">
+                      <Server size={11} /> Persistence:
+                    </span>
+                    <span className="badge badge-success text-[9px] py-0.5">
+                      Full Client CRUD Saved
+                    </span>
+                  </div>
 
-              <div className="flex items-center justify-between pt-1 text-[10px] text-slate-400">
-                <span>Last live sync:</span>
-                <span className="font-mono font-semibold text-slate-700 dark:text-slate-300">
-                  {formattedTime}
-                </span>
-              </div>
-            </div>
+                  <div className="flex items-center justify-between p-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700">
+                    <span className="text-slate-400 flex items-center gap-1">
+                      <Shield size={11} /> Isolation:
+                    </span>
+                    <span className="font-mono font-bold text-slate-800 dark:text-slate-200 text-[10px]">
+                      Independent Per Device
+                    </span>
+                  </div>
 
-            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
-              <span className="text-[10px] text-slate-400">All data synced live</span>
-              <button
-                type="button"
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                className="btn btn-secondary btn-sm !py-1 !px-2.5 !text-xs flex items-center gap-1 font-bold bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800"
-              >
-                <RefreshCw size={12} className={isRefreshing ? 'animate-spin' : ''} />
-                <span>Sync Now</span>
-              </button>
-            </div>
+                  <p className="pt-1 text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Changes made in this session (creating students, entering grades, taking attendance, setting terms) are stored directly in your browser.
+                  </p>
+                </div>
+
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                  <span className="text-[10px] text-slate-400">Test with clean data?</span>
+                  <button
+                    type="button"
+                    onClick={handleResetData}
+                    className="btn btn-secondary btn-sm !py-1 !px-2.5 !text-xs flex items-center gap-1 font-bold bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-950 dark:text-rose-300 border-rose-200 dark:border-rose-800 cursor-pointer"
+                  >
+                    <RotateCcw size={12} />
+                    <span>Reset Demo Data</span>
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </>
       )}
     </div>
   );
 };
+

@@ -180,12 +180,13 @@ interface SchoolContextType {
   getStudentName: (studentId: string) => string;
   getStudentAvatar: (studentId: string) => string;
 
-  // Live PostgreSQL Database
+  // Live PostgreSQL Database / Local Storage Demo
   isLiveDb: boolean;
   dbStatus: 'CONNECTING' | 'CONNECTED' | 'ERROR' | 'OFFLINE';
   dbInfo: { provider: string; host: string; database: string } | null;
   lastSyncTime: Date | null;
   refreshFromLiveDb: () => Promise<void>;
+  resetToDemoData: () => void;
 }
 
 const SchoolContext = createContext<SchoolContextType | undefined>(undefined);
@@ -203,106 +204,238 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
   };
 
+  // LocalStorage generic helper
+  function loadFromStorage<T>(key: string, defaultValue: T): T {
+    if (typeof window === 'undefined') return defaultValue;
+    try {
+      const saved = localStorage.getItem(key);
+      if (!saved) return defaultValue;
+      const parsed = JSON.parse(saved);
+      if (parsed !== null && parsed !== undefined) {
+        if (Array.isArray(defaultValue) && !Array.isArray(parsed)) {
+          return defaultValue;
+        }
+        return parsed;
+      }
+    } catch {
+      // Fallback
+    }
+    return defaultValue;
+  }
+
   // State initialization with localStorage persistence
   const [school, setSchool] = useState<School>(() => {
     const saved = localStorage.getItem('schoolos_school');
     if (saved) {
       try {
-        return JSON.parse(saved);
-      } catch (e) {}
+        const parsed = JSON.parse(saved);
+        if (
+          parsed &&
+          !parsed.name?.toLowerCase().includes('citadel') &&
+          !parsed.address?.toLowerCase().includes('citadel') &&
+          !parsed.email?.toLowerCase().includes('citadel')
+        ) {
+          return parsed;
+        }
+      } catch {}
     }
     return INITIAL_SCHOOL;
   });
 
-  const [sessions, setSessions] = useState<AcademicSession[]>(() => {
-    const saved = localStorage.getItem('schoolos_sessions');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch (e) {}
-    }
-    return INITIAL_SESSIONS;
-  });
+  const [sessions, setSessions] = useState<AcademicSession[]>(() =>
+    loadFromStorage('schoolos_sessions', INITIAL_SESSIONS)
+  );
 
   const [terms, setTerms] = useState<Term[]>(() => {
-    const saved = localStorage.getItem('schoolos_terms');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          // Always sanitize any seasonal suffixes like (Autumn), (Spring), (Summer)
-          return parsed.map((t: Term) => ({
-            ...t,
-            name: t.name.replace(/\s*\(Autumn\)|\s*\(Spring\)|\s*\(Summer\)/gi, '').trim(),
-          }));
-        }
-      } catch (e) {}
-    }
-    return INITIAL_TERMS;
+    const stored = loadFromStorage<Term[]>('schoolos_terms', INITIAL_TERMS);
+    return stored.map((t: Term) => ({
+      ...t,
+      name: t.name.replace(/\s*\(Autumn\)|\s*\(Spring\)|\s*\(Summer\)/gi, '').trim(),
+    }));
   });
-  const [classLevels, setClassLevels] = useState<ClassLevel[]>(INITIAL_CLASS_LEVELS);
-  const [classSections, setClassSections] = useState<ClassSection[]>(INITIAL_CLASS_SECTIONS);
-  const [subjects, setSubjects] = useState<Subject[]>(INITIAL_SUBJECTS);
-  const [assessmentConfigs, setAssessmentConfigs] = useState<AssessmentWeightConfig[]>(INITIAL_ASSESSMENT_CONFIG);
+
+  const [classLevels, setClassLevels] = useState<ClassLevel[]>(() =>
+    loadFromStorage('schoolos_class_levels', INITIAL_CLASS_LEVELS)
+  );
+
+  const [classSections, setClassSections] = useState<ClassSection[]>(() =>
+    loadFromStorage('schoolos_class_sections', INITIAL_CLASS_SECTIONS)
+  );
+
+  const [subjects, setSubjects] = useState<Subject[]>(() =>
+    loadFromStorage('schoolos_subjects', INITIAL_SUBJECTS)
+  );
+
+  const [assessmentConfigs, setAssessmentConfigs] = useState<AssessmentWeightConfig[]>(() =>
+    loadFromStorage('schoolos_assessment_configs', INITIAL_ASSESSMENT_CONFIG)
+  );
+
   const [gradingScale] = useState<GradingScaleTier[]>(INITIAL_GRADING_SCALE);
-  const [users, setUsers] = useState<User[]>(INITIAL_USERS);
-  const [teachers, setTeachers] = useState<Teacher[]>(INITIAL_TEACHERS);
-  const [parents, setParents] = useState<Parent[]>(INITIAL_PARENTS);
-  const [students, setStudents] = useState<Student[]>(INITIAL_STUDENTS);
-  const [studentProfiles, setStudentProfiles] = useState<Record<string, { name: string; avatar: string }>>(INITIAL_STUDENT_USERS);
-  const [teacherAssignments, setTeacherAssignments] = useState<TeacherAssignment[]>(INITIAL_TEACHER_ASSIGNMENTS);
-  const [attendance, setAttendance] = useState<AttendanceRecord[]>(INITIAL_ATTENDANCE);
-  const [submissions, setSubmissions] = useState<ResultSubmission[]>(INITIAL_SUBMISSIONS);
-  const [scores, setScores] = useState<ScoreItem[]>(INITIAL_SCORES);
-  const [announcements, setAnnouncements] = useState<Announcement[]>(INITIAL_ANNOUNCEMENTS);
-  const [timetableSlots, setTimetableSlots] = useState<TimetableSlot[]>(INITIAL_TIMETABLE);
-  const [periodDefinitions, setPeriodDefinitions] = useState<PeriodDefinition[]>(() => {
-    const saved = localStorage.getItem('schoolos_period_definitions');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch (e) {
-        // Fallback
-      }
-    }
-    return INITIAL_PERIOD_DEFINITIONS;
+
+  const [users, setUsers] = useState<User[]>(() => {
+    const stored = loadFromStorage<User[]>('schoolos_users', INITIAL_USERS);
+    return stored.map(u => ({
+      ...u,
+      email: u.email.replace(/@thecitadelschools\.com/gi, '@namelessschool.edu'),
+    }));
   });
 
-  useEffect(() => {
-    localStorage.setItem('schoolos_period_definitions', JSON.stringify(periodDefinitions));
-  }, [periodDefinitions]);
+  const [teachers, setTeachers] = useState<Teacher[]>(() =>
+    loadFromStorage('schoolos_teachers', INITIAL_TEACHERS)
+  );
 
-  useEffect(() => {
-    localStorage.setItem('schoolos_school', JSON.stringify(school));
-  }, [school]);
+  const [parents, setParents] = useState<Parent[]>(() =>
+    loadFromStorage('schoolos_parents', INITIAL_PARENTS)
+  );
 
-  useEffect(() => {
-    localStorage.setItem('schoolos_sessions', JSON.stringify(sessions));
-  }, [sessions]);
+  const [students, setStudents] = useState<Student[]>(() =>
+    loadFromStorage('schoolos_students', INITIAL_STUDENTS)
+  );
 
-  useEffect(() => {
-    localStorage.setItem('schoolos_terms', JSON.stringify(terms));
-  }, [terms]);
+  const [studentProfiles, setStudentProfiles] = useState<Record<string, { name: string; avatar: string }>>(() =>
+    loadFromStorage('schoolos_student_profiles', INITIAL_STUDENT_USERS)
+  );
 
-  const [studentBehaviorNotes, setStudentBehaviorNotes] = useState<StudentBehaviorNote[]>(INITIAL_BEHAVIOR_NOTES);
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(INITIAL_AUDIT_LOGS);
+  const [teacherAssignments, setTeacherAssignments] = useState<TeacherAssignment[]>(() =>
+    loadFromStorage('schoolos_teacher_assignments', INITIAL_TEACHER_ASSIGNMENTS)
+  );
 
-  // Live Database State
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>(() =>
+    loadFromStorage('schoolos_attendance', INITIAL_ATTENDANCE)
+  );
+
+  const [submissions, setSubmissions] = useState<ResultSubmission[]>(() =>
+    loadFromStorage('schoolos_submissions', INITIAL_SUBMISSIONS)
+  );
+
+  const [scores, setScores] = useState<ScoreItem[]>(() =>
+    loadFromStorage('schoolos_scores', INITIAL_SCORES)
+  );
+
+  const [announcements, setAnnouncements] = useState<Announcement[]>(() =>
+    loadFromStorage('schoolos_announcements', INITIAL_ANNOUNCEMENTS)
+  );
+
+  const [timetableSlots, setTimetableSlots] = useState<TimetableSlot[]>(() =>
+    loadFromStorage('schoolos_timetable_slots', INITIAL_TIMETABLE)
+  );
+
+  const [periodDefinitions, setPeriodDefinitions] = useState<PeriodDefinition[]>(() =>
+    loadFromStorage('schoolos_period_definitions', INITIAL_PERIOD_DEFINITIONS)
+  );
+
+  const [studentBehaviorNotes, setStudentBehaviorNotes] = useState<StudentBehaviorNote[]>(() =>
+    loadFromStorage('schoolos_student_behavior_notes', INITIAL_BEHAVIOR_NOTES)
+  );
+
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() =>
+    loadFromStorage('schoolos_audit_logs', INITIAL_AUDIT_LOGS)
+  );
+
+  // Active simulated user & Auth state
+  const [currentUserId, setCurrentUserId] = useState<string>(() => {
+    const stored = localStorage.getItem('schoolos_current_user_id');
+    return stored || 'usr_admin';
+  });
+
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    const stored = localStorage.getItem('schoolos_auth');
+    return stored !== null ? stored === 'true' : true;
+  });
+
+  // LocalStorage Synchronizers
+  useEffect(() => { localStorage.setItem('schoolos_school', JSON.stringify(school)); }, [school]);
+  useEffect(() => { localStorage.setItem('schoolos_sessions', JSON.stringify(sessions)); }, [sessions]);
+  useEffect(() => { localStorage.setItem('schoolos_terms', JSON.stringify(terms)); }, [terms]);
+  useEffect(() => { localStorage.setItem('schoolos_class_levels', JSON.stringify(classLevels)); }, [classLevels]);
+  useEffect(() => { localStorage.setItem('schoolos_class_sections', JSON.stringify(classSections)); }, [classSections]);
+  useEffect(() => { localStorage.setItem('schoolos_subjects', JSON.stringify(subjects)); }, [subjects]);
+  useEffect(() => { localStorage.setItem('schoolos_assessment_configs', JSON.stringify(assessmentConfigs)); }, [assessmentConfigs]);
+  useEffect(() => { localStorage.setItem('schoolos_users', JSON.stringify(users)); }, [users]);
+  useEffect(() => { localStorage.setItem('schoolos_teachers', JSON.stringify(teachers)); }, [teachers]);
+  useEffect(() => { localStorage.setItem('schoolos_parents', JSON.stringify(parents)); }, [parents]);
+  useEffect(() => { localStorage.setItem('schoolos_students', JSON.stringify(students)); }, [students]);
+  useEffect(() => { localStorage.setItem('schoolos_student_profiles', JSON.stringify(studentProfiles)); }, [studentProfiles]);
+  useEffect(() => { localStorage.setItem('schoolos_teacher_assignments', JSON.stringify(teacherAssignments)); }, [teacherAssignments]);
+  useEffect(() => { localStorage.setItem('schoolos_attendance', JSON.stringify(attendance)); }, [attendance]);
+  useEffect(() => { localStorage.setItem('schoolos_submissions', JSON.stringify(submissions)); }, [submissions]);
+  useEffect(() => { localStorage.setItem('schoolos_scores', JSON.stringify(scores)); }, [scores]);
+  useEffect(() => { localStorage.setItem('schoolos_announcements', JSON.stringify(announcements)); }, [announcements]);
+  useEffect(() => { localStorage.setItem('schoolos_timetable_slots', JSON.stringify(timetableSlots)); }, [timetableSlots]);
+  useEffect(() => { localStorage.setItem('schoolos_period_definitions', JSON.stringify(periodDefinitions)); }, [periodDefinitions]);
+  useEffect(() => { localStorage.setItem('schoolos_student_behavior_notes', JSON.stringify(studentBehaviorNotes)); }, [studentBehaviorNotes]);
+  useEffect(() => { localStorage.setItem('schoolos_audit_logs', JSON.stringify(auditLogs)); }, [auditLogs]);
+  useEffect(() => { localStorage.setItem('schoolos_current_user_id', currentUserId); }, [currentUserId]);
+  useEffect(() => { localStorage.setItem('schoolos_auth', String(isAuthenticated)); }, [isAuthenticated]);
+
+  // Demo Reset function for dev team testing
+  const resetToDemoData = () => {
+    const keys = [
+      'schoolos_school',
+      'schoolos_sessions',
+      'schoolos_terms',
+      'schoolos_class_levels',
+      'schoolos_class_sections',
+      'schoolos_subjects',
+      'schoolos_assessment_configs',
+      'schoolos_users',
+      'schoolos_teachers',
+      'schoolos_parents',
+      'schoolos_students',
+      'schoolos_student_profiles',
+      'schoolos_teacher_assignments',
+      'schoolos_attendance',
+      'schoolos_submissions',
+      'schoolos_scores',
+      'schoolos_announcements',
+      'schoolos_timetable_slots',
+      'schoolos_period_definitions',
+      'schoolos_student_behavior_notes',
+      'schoolos_audit_logs',
+      'schoolos_current_user_id',
+      'schoolos_auth',
+    ];
+    keys.forEach(k => localStorage.removeItem(k));
+    window.location.reload();
+  };
+
+  // Live Database State (with graceful fallback to Local Storage demo)
   const [isLiveDb, setIsLiveDb] = useState<boolean>(false);
-  const [dbStatus, setDbStatus] = useState<'CONNECTING' | 'CONNECTED' | 'ERROR' | 'OFFLINE'>('CONNECTING');
+  const [dbStatus, setDbStatus] = useState<'CONNECTING' | 'CONNECTED' | 'ERROR' | 'OFFLINE'>('OFFLINE');
   const [dbInfo, setDbInfo] = useState<{ provider: string; host: string; database: string } | null>(null);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   const isInitialLoadDone = useRef(false);
 
   const refreshFromLiveDb = useCallback(async () => {
-    try {
-      const healthRes = await fetch('/api/db/health');
-      if (!healthRes.ok) throw new Error('Health check failed');
-      const healthData = await healthRes.json();
+    // Only attempt live PostgreSQL network connection on localhost development server.
+    // When running on Vercel or any remote URL, instantly stay in LocalStorage mode without network latency.
+    const isLocal =
+      typeof window !== 'undefined' &&
+      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
-      if (healthData.ok) {
+    if (!isLocal) {
+      setIsLiveDb(false);
+      setDbStatus('OFFLINE');
+      return;
+    }
+
+    try {
+      const healthRes = await fetch('/api/db/health').catch(() => null);
+      if (!healthRes || !healthRes.ok) {
+        setIsLiveDb(false);
+        setDbStatus('OFFLINE');
+        return;
+      }
+
+      const contentType = healthRes.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        setIsLiveDb(false);
+        setDbStatus('OFFLINE');
+        return;
+      }
+
+      const healthData = await healthRes.json();
+      if (healthData && healthData.ok) {
         setIsLiveDb(true);
         setDbStatus('CONNECTED');
         setDbInfo({
@@ -311,10 +444,10 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           database: healthData.database,
         });
 
-        const stateRes = await fetch('/api/db/state');
-        if (stateRes.ok) {
+        const stateRes = await fetch('/api/db/state').catch(() => null);
+        if (stateRes && stateRes.ok) {
           const statePayload = await stateRes.json();
-          if (statePayload.ok && statePayload.data) {
+          if (statePayload && statePayload.ok && statePayload.data) {
             const d = statePayload.data;
             if (d.school) setSchool(d.school);
             if (Array.isArray(d.sessions) && d.sessions.length) setSessions(d.sessions);
@@ -340,21 +473,20 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           }
         }
       }
-    } catch (err) {
-      console.warn('[SchoolOS] Live DB connection not available:', err);
+    } catch {
       setIsLiveDb(false);
       setDbStatus('OFFLINE');
     }
   }, []);
 
-  // On mount: fetch live database
+  // On mount: fetch live database if local
   useEffect(() => {
     refreshFromLiveDb().finally(() => {
       isInitialLoadDone.current = true;
     });
   }, [refreshFromLiveDb]);
 
-  // Debounced auto-sync to PostgreSQL when state updates
+  // Debounced auto-sync to PostgreSQL when state updates (only if isLiveDb active)
   useEffect(() => {
     if (!isInitialLoadDone.current || !isLiveDb) return;
 
@@ -395,17 +527,6 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     scores,
     auditLogs,
   ]);
-
-  // Active simulated user & Auth state
-  const [currentUserId, setCurrentUserId] = useState<string>('usr_admin');
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    const stored = localStorage.getItem('schoolos_auth');
-    return stored !== null ? stored === 'true' : true;
-  });
-
-  useEffect(() => {
-    localStorage.setItem('schoolos_auth', String(isAuthenticated));
-  }, [isAuthenticated]);
 
   const currentUser = users.find(u => u.id === currentUserId) || users[0];
 
@@ -1550,6 +1671,7 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     dbInfo,
     lastSyncTime,
     refreshFromLiveDb,
+    resetToDemoData,
   };
 
   return <SchoolContext.Provider value={value}>{children}</SchoolContext.Provider>;

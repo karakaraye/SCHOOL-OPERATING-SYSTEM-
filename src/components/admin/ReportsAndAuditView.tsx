@@ -50,7 +50,7 @@ export const ReportsAndAuditView: React.FC = () => {
 
   const generateRandomPassword = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$';
-    let res = 'Citadel#';
+    let res = 'School#';
     for (let i = 0; i < 4; i++) {
       res += chars.charAt(Math.floor(Math.random() * chars.length));
     }

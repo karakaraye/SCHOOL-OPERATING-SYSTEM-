@@ -8,10 +8,15 @@ import {
   pool,
 } from './db.ts';
 
-// Ensure tables exist on server startup
-initDatabase().catch(err => {
-  console.error('[API Router] DB auto-initialization error:', err);
-});
+let dbInitPromise: Promise<void> | null = null;
+function ensureDbInitialized() {
+  if (!dbInitPromise) {
+    dbInitPromise = initDatabase().catch(err => {
+      console.error('[API Router] DB auto-initialization error:', err);
+    });
+  }
+  return dbInitPromise;
+}
 
 function sendJson(res: ServerResponse, statusCode: number, data: any) {
   res.writeHead(statusCode, {
@@ -74,6 +79,7 @@ export async function handleApiRequest(
   }
 
   try {
+    await ensureDbInitialized();
     // 1. Health check
     if (url === '/api/db/health' || url.startsWith('/api/db/health?')) {
       const dbRes = await pool.query('SELECT current_database(), current_user, version()');

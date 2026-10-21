@@ -586,7 +586,7 @@ export const TeachersView: React.FC = () => {
                 <input
                   type="email"
                   required
-                  placeholder="jonathan.agbo@thecitadelschools.com"
+                  placeholder="jonathan.agbo@namelessschool.edu"
                   value={teacherFormData.email}
                   onChange={e => setTeacherFormData({ ...teacherFormData, email: e.target.value })}
                   className="input-control !w-full !py-1.5 !px-3 !text-xs !bg-white dark:!bg-slate-800 !text-slate-900 dark:!text-white !border-slate-300 dark:!border-slate-700 font-medium"

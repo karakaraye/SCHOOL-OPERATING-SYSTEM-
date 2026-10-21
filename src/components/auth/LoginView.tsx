@@ -60,10 +60,10 @@ export const LoginView: React.FC = () => {
     setActiveRoleTab(tab);
     setErrorMessage(null);
     if (tab === 'ADMIN') {
-      setCredential('samuel.adeleke@thecitadelschools.com');
+      setCredential('samuel.adeleke@namelessschool.edu');
       setPassword('admin');
     } else if (tab === 'TEACHER') {
-      setCredential('david.adeleke@thecitadelschools.com');
+      setCredential('david.adeleke@namelessschool.edu');
       setPassword('teacher123');
     } else if (tab === 'PARENT') {
       setCredential('m.okonkwo@medicare.ng');
@@ -100,7 +100,7 @@ export const LoginView: React.FC = () => {
     } else if (activeRoleTab === 'TEACHER' && credential) {
       setCpIdentifier(credential);
     } else {
-      setCpIdentifier('david.adeleke@thecitadelschools.com');
+      setCpIdentifier('david.adeleke@namelessschool.edu');
     }
     setShowChangePasswordModal(true);
   };
@@ -338,10 +338,10 @@ export const LoginView: React.FC = () => {
                   required
                   placeholder={
                     activeRoleTab === 'TEACHER'
-                      ? 'david.adeleke@thecitadelschools.com or STAFF/2024/001'
+                      ? 'david.adeleke@namelessschool.edu or STAFF/2024/001'
                       : activeRoleTab === 'PARENT'
                       ? 'm.okonkwo@medicare.ng'
-                      : 'admin@thecitadelschools.com or admin'
+                      : 'samuel.adeleke@namelessschool.edu or admin'
                   }
                   value={credential}
                   onChange={e => setCredential(e.target.value)}
@@ -487,7 +487,7 @@ export const LoginView: React.FC = () => {
                     <input
                       type="text"
                       required
-                      placeholder="e.g. david.adeleke@thecitadelschools.com or STAFF/2024/001"
+                      placeholder="e.g. david.adeleke@namelessschool.edu or STAFF/2024/001"
                       value={cpIdentifier}
                       onChange={e => setCpIdentifier(e.target.value)}
                       className="input-control !w-full !pl-10 !bg-white !text-slate-900 !border-slate-300"
